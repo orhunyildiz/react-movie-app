@@ -31,6 +31,10 @@ export default function App() {
         handleUnSelectMovie();
     }
 
+    function handleDeleteFromList(id) {
+        setSelectedMovies((selectedMovies) => selectedMovies.filter((m) => m.id !== id));
+    }
+
     useEffect(() => {
         async function getMovies() {
             try {
@@ -89,11 +93,15 @@ export default function App() {
                                     selectedMovie={selectedMovie}
                                     onUnselectMovie={handleUnSelectMovie}
                                     onAddToList={handleAdd}
+                                    selectedMovies={selectedMovies}
                                 />
                             ) : (
                                 <>
                                     <MyMovieListSummary selectedMovies={selectedMovies} />
-                                    <MyMovieListWrapper selectedMovies={selectedMovies} />
+                                    <MyMovieListWrapper
+                                        selectedMovies={selectedMovies}
+                                        onDeleteFromList={handleDeleteFromList}
+                                    />
                                 </>
                             )}
                         </ListContainer>
@@ -218,9 +226,10 @@ function MovieList({ movies, onSelectMovie, selectedMovie }) {
     );
 }
 
-function MovieDetails({ selectedMovie, onUnselectMovie, onAddToList }) {
+function MovieDetails({ selectedMovie, onUnselectMovie, onAddToList, selectedMovies }) {
     const [movie, setMovie] = useState({});
     const [loading, setLoading] = useState(false);
+    const isAddedToList = selectedMovies.map((m) => m.id).includes(selectedMovie);
     useEffect(() => {
         async function getMovieDetails() {
             setLoading(true);
@@ -269,9 +278,13 @@ function MovieDetails({ selectedMovie, onUnselectMovie, onAddToList }) {
                                     </span>
                                 ))}
                             </p>
-                            <button className="btn btn-primary me-1" onClick={() => onAddToList(movie)}>
-                                Add
-                            </button>
+                            {!isAddedToList ? (
+                                <button className="btn btn-primary me-1" onClick={() => onAddToList(movie)}>
+                                    Add
+                                </button>
+                            ) : (
+                                <p>The movie is already in your list!</p>
+                            )}
                             <button className="btn btn-danger" onClick={onUnselectMovie}>
                                 Close
                             </button>
@@ -329,11 +342,13 @@ function MyMovieListSummary({ selectedMovies }) {
     );
 }
 
-function MyMovieListWrapper({ selectedMovies }) {
-    return selectedMovies.map((movie) => <MyMovieList movie={movie} key={movie.id} />);
+function MyMovieListWrapper({ selectedMovies, onDeleteFromList }) {
+    return selectedMovies.map((movie) => (
+        <MyMovieList movie={movie} key={movie.id} onDeleteFromList={onDeleteFromList} />
+    ));
 }
 
-function MyMovieList({ movie }) {
+function MyMovieList({ movie, onDeleteFromList }) {
     return (
         <div className="card mb-2">
             <div className="row">
@@ -361,6 +376,9 @@ function MyMovieList({ movie }) {
                                 <span>{movie.runtime} min.</span>
                             </p>
                         </div>
+                        <button className="btn btn-danger" onClick={() => onDeleteFromList(movie.id)}>
+                            Delete
+                        </button>
                     </div>
                 </div>
             </div>
