@@ -17,3 +17,9 @@
     background-color: brown;
     color: #fff;
 }
+
+.movie-list {
+    position: sticky;
+    top: 5%;
+    z-index: 1;
+}

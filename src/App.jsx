@@ -4,6 +4,12 @@ const getAverage = (array) => array.reduce((sum, value) => sum + value / array.l
 
 const api_key = "3f14d0e50817377c6d546bdc3ad30b21";
 
+function formatDate(isoDateString) {
+    if (!isoDateString) return "";
+    const [year, month, day] = isoDateString.split("-");
+    return `${day}-${month}-${year}`;
+}
+
 export default function App() {
     const [query, setQuery] = useState("father");
     const [movies, setMovies] = useState([]);
@@ -169,21 +175,71 @@ function MovieList({ movies, onSelectMovie, selectedMovie }) {
 }
 
 function MovieDetails({ selectedMovie, onUnselectMovie }) {
+    const [movie, setMovie] = useState({});
+    const [loading, setLoading] = useState(false);
+    useEffect(
+        function () {
+            async function getMovieDetails() {
+                setLoading(true);
+                const response = await fetch(`https://api.themoviedb.org/3/movie/${selectedMovie}?api_key=${api_key}`);
+                const data = await response.json();
+                setMovie(data);
+                setLoading(false);
+            }
+            getMovieDetails();
+        },
+        [selectedMovie]
+    );
     return (
-        <div>
-            <p className="alert alert-primary">{selectedMovie}</p>
-            <button className="btn btn-danger" onClick={onUnselectMovie}>
-                Close
-            </button>
-        </div>
+        <>
+            {loading ? (
+                <Loading />
+            ) : (
+                <div className="p-2 mt-3">
+                    <div className="row">
+                        <div className="col-4">
+                            <img
+                                src={
+                                    movie.poster_path
+                                        ? "http://image.tmdb.org/t/p/w500" + movie.poster_path
+                                        : "/img/no-image.jpg"
+                                }
+                                alt={movie.title}
+                                className="img-fluid rounded"
+                            />
+                        </div>
+                        <div className="col-8">
+                            <h6>{movie.title}</h6>
+                            <p>
+                                <i className="bi bi-calendar2-date me-1"></i>
+                                <span>{movie.release_date ? formatDate(movie.release_date) : ""}</span>
+                            </p>
+                            <p>
+                                <i className="bi bi-star-fill text-warning"></i>
+                                <span className="ms-1">{movie.vote_average}</span>
+                            </p>
+                        </div>
+                        <div className="col-12 border-top p-3 mt-3">
+                            <p>{movie.overview}</p>
+                            <p>
+                                {movie.genres?.map((genre) => (
+                                    <span key={genre.id} className="badge text-bg-primary me-3">
+                                        {genre.name}
+                                    </span>
+                                ))}
+                            </p>
+                            <button className="btn btn-danger" onClick={onUnselectMovie}>
+                                Close
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </>
     );
 }
 
 function Movie({ movie, onSelectMovie, selectedMovie }) {
-    function formatDate(isoDateString) {
-        const [year, month, day] = isoDateString.split("-");
-        return `${day}-${month}-${year}`;
-    }
     return (
         <div className="col mb-2">
             <div
@@ -199,7 +255,7 @@ function Movie({ movie, onSelectMovie, selectedMovie }) {
                     <h6 className="card-title">{movie.title}</h6>
                     <div>
                         <i className="bi bi-calendar2-date me-1"></i>
-                        <span>{formatDate(movie.release_date)}</span>
+                        <span>{movie.release_date ? formatDate(movie.release_date) : ""}</span>
                     </div>
                 </div>
             </div>
@@ -211,7 +267,7 @@ function MyMovieListSummary({ selectedMovies }) {
     const avgRating = getAverage(selectedMovies.map((m) => m.Rating));
     const avgDuration = getAverage(selectedMovies.map((d) => d.Duration));
     return (
-        <div className="card mb-2">
+        <div className="card mb-2 border-0">
             <div className="card-body">
                 <h5>My List: [{selectedMovies.length}] movies</h5>
                 <div className="d-flex justify-content-between">
