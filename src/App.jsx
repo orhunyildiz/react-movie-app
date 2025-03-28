@@ -26,38 +26,40 @@ export default function App() {
         setSelectedMovie(null);
     }
 
-    useEffect(
-        function () {
-            // First Render (Mount)
-            async function getMovies() {
-                try {
-                    setLoading(true);
-                    setError("");
-                    const response = await fetch(
-                        `https://api.themoviedb.org/3/search/movie?api_key=${api_key}&query=${query}`
-                    );
-                    if (!response.ok) {
-                        throw new Error("An unknown error occured!");
-                    }
-                    const data = await response.json();
-                    if (data.total_results === 0) {
-                        throw new Error("The movie not found!");
-                    }
-                    setMovies(data.results);
-                } catch (error) {
-                    setError(error.message);
-                }
-                setLoading(false);
-            }
-            if (query.length < 3) {
-                setMovies([]);
+    function handleAdd(movie) {
+        setSelectedMovies((selectedMovies) => [...selectedMovies, movie]);
+        handleUnSelectMovie();
+    }
+
+    useEffect(() => {
+        async function getMovies() {
+            try {
+                setLoading(true);
                 setError("");
-                return;
+                const response = await fetch(
+                    `https://api.themoviedb.org/3/search/movie?api_key=${api_key}&query=${query}`
+                );
+                if (!response.ok) {
+                    throw new Error("An unknown error occured!");
+                }
+                const data = await response.json();
+                if (data.total_results === 0) {
+                    throw new Error("The movie not found!");
+                }
+                setMovies(data.results);
+            } catch (error) {
+                setError(error.message);
             }
-            getMovies();
-        },
-        [query]
-    );
+            setLoading(false);
+        }
+        if (query.length < 3) {
+            setMovies([]);
+            setError("");
+            return;
+        }
+        getMovies();
+    }, [query]);
+
     return (
         <>
             <Nav>
@@ -82,16 +84,58 @@ export default function App() {
                     </div>
                     <div className="col-md-3">
                         <ListContainer>
-                            <MyMovieListSummary selectedMovies={selectedMovies} />
-                            <MyMovieListWrapper selectedMovies={selectedMovies} />
-                            {selectedMovie && (
-                                <MovieDetails selectedMovie={selectedMovie} onUnselectMovie={handleUnSelectMovie} />
+                            {selectedMovie ? (
+                                <MovieDetails
+                                    selectedMovie={selectedMovie}
+                                    onUnselectMovie={handleUnSelectMovie}
+                                    onAddToList={handleAdd}
+                                />
+                            ) : (
+                                <>
+                                    <MyMovieListSummary selectedMovies={selectedMovies} />
+                                    <MyMovieListWrapper selectedMovies={selectedMovies} />
+                                </>
                             )}
                         </ListContainer>
                     </div>
                 </div>
             </Main>
+            <BackToTop />
         </>
+    );
+}
+
+function BackToTop() {
+    const [isVisible, setIsVisible] = useState(false);
+
+    useEffect(() => {
+        const toggleVisibility = () => {
+            if (window.pageYOffset > 300) {
+                setIsVisible(true);
+            } else {
+                setIsVisible(false);
+            }
+        };
+
+        window.addEventListener("scroll", toggleVisibility);
+        return () => window.removeEventListener("scroll", toggleVisibility);
+    }, []);
+
+    const scrollToTop = () => {
+        window.scrollTo({
+            top: 0,
+            behavior: "smooth",
+        });
+    };
+
+    return (
+        <div className="backToTop">
+            {isVisible && (
+                <button onClick={scrollToTop} className="btn btn-primary">
+                    Back to Top
+                </button>
+            )}
+        </div>
     );
 }
 
@@ -174,22 +218,19 @@ function MovieList({ movies, onSelectMovie, selectedMovie }) {
     );
 }
 
-function MovieDetails({ selectedMovie, onUnselectMovie }) {
+function MovieDetails({ selectedMovie, onUnselectMovie, onAddToList }) {
     const [movie, setMovie] = useState({});
     const [loading, setLoading] = useState(false);
-    useEffect(
-        function () {
-            async function getMovieDetails() {
-                setLoading(true);
-                const response = await fetch(`https://api.themoviedb.org/3/movie/${selectedMovie}?api_key=${api_key}`);
-                const data = await response.json();
-                setMovie(data);
-                setLoading(false);
-            }
-            getMovieDetails();
-        },
-        [selectedMovie]
-    );
+    useEffect(() => {
+        async function getMovieDetails() {
+            setLoading(true);
+            const response = await fetch(`https://api.themoviedb.org/3/movie/${selectedMovie}?api_key=${api_key}`);
+            const data = await response.json();
+            setMovie(data);
+            setLoading(false);
+        }
+        getMovieDetails();
+    }, [selectedMovie]);
     return (
         <>
             {loading ? (
@@ -228,6 +269,9 @@ function MovieDetails({ selectedMovie, onUnselectMovie }) {
                                     </span>
                                 ))}
                             </p>
+                            <button className="btn btn-primary me-1" onClick={() => onAddToList(movie)}>
+                                Add
+                            </button>
                             <button className="btn btn-danger" onClick={onUnselectMovie}>
                                 Close
                             </button>
@@ -264,8 +308,8 @@ function Movie({ movie, onSelectMovie, selectedMovie }) {
 }
 
 function MyMovieListSummary({ selectedMovies }) {
-    const avgRating = getAverage(selectedMovies.map((m) => m.Rating));
-    const avgDuration = getAverage(selectedMovies.map((d) => d.Duration));
+    const avgRating = getAverage(selectedMovies.map((m) => m.vote_average));
+    const sumDuration = selectedMovies.reduce((total, movie) => total + movie.runtime, 0);
     return (
         <div className="card mb-2 border-0">
             <div className="card-body">
@@ -277,7 +321,7 @@ function MyMovieListSummary({ selectedMovies }) {
                     </p>
                     <p>
                         <i className="bi bi-hourglass-split me-1"></i>
-                        <span>{avgDuration.toFixed(1)} min.</span>
+                        <span>{sumDuration} min.</span>
                     </p>
                 </div>
             </div>
@@ -286,7 +330,7 @@ function MyMovieListSummary({ selectedMovies }) {
 }
 
 function MyMovieListWrapper({ selectedMovies }) {
-    return selectedMovies.map((movie) => <MyMovieList movie={movie} key={movie.Id} />);
+    return selectedMovies.map((movie) => <MyMovieList movie={movie} key={movie.id} />);
 }
 
 function MyMovieList({ movie }) {
@@ -294,7 +338,15 @@ function MyMovieList({ movie }) {
         <div className="card mb-2">
             <div className="row">
                 <div className="col-4">
-                    <img src={movie.Poster} alt={movie.title} className="img-fluid rounded-start" />
+                    <img
+                        src={
+                            movie.poster_path
+                                ? "http://image.tmdb.org/t/p/w500" + movie.poster_path
+                                : "/img/no-image.jpg"
+                        }
+                        alt={movie.title}
+                        className="img-fluid rounded-start"
+                    />
                 </div>
                 <div className="col-8">
                     <div className="card-body">
@@ -302,11 +354,11 @@ function MyMovieList({ movie }) {
                         <div className="d-flex justify-content-between">
                             <p>
                                 <i className="bi bi-star-fill text-warning me-1"></i>
-                                <span>{movie.Rating}</span>
+                                <span>{movie.vote_average}</span>
                             </p>
                             <p>
                                 <i className="bi bi-hourglass me-1"></i>
-                                <span>{movie.Duration} min.</span>
+                                <span>{movie.runtime} min.</span>
                             </p>
                         </div>
                     </div>

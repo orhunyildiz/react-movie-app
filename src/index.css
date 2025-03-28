@@ -18,8 +18,15 @@
     color: #fff;
 }
 
-.movie-list {
+/* .movie-list {
     position: sticky;
     top: 5%;
+    z-index: 1;
+} */
+
+.backToTop {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
     z-index: 1;
 }
