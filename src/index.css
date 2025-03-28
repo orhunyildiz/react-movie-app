@@ -1,0 +1,19 @@
+.movie {
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: border 0.2s ease, box-shadow 0.2s ease;
+}
+
+.movie:hover {
+    border: 1px solid royalblue;
+    box-shadow: rgba(100, 100, 111, 0.2) 0px 7px 29px 0px;
+}
+
+.movie:active {
+    box-shadow: rgb(204, 219, 232) 3px 3px 6px 0px inset, rgba(255, 255, 255, 0.5) -3px -3px 6px 1px inset;
+}
+
+.selected-movie {
+    background-color: brown;
+    color: #fff;
+}
