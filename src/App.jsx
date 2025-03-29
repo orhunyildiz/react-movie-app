@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import StarRating from "./StarRating";
 
 const getAverage = (array) => array.reduce((sum, value) => sum + value / array.length, 0);
 
@@ -229,7 +230,18 @@ function MovieList({ movies, onSelectMovie, selectedMovie }) {
 function MovieDetails({ selectedMovie, onUnselectMovie, onAddToList, selectedMovies }) {
     const [movie, setMovie] = useState({});
     const [loading, setLoading] = useState(false);
+    const [userRating, setUserRating] = useState("");
     const isAddedToList = selectedMovies.map((m) => m.id).includes(selectedMovie);
+    const selectedMoviesUserRating = selectedMovies.find((m) => m.id === selectedMovie)?.userRating;
+
+    function handleAddToList() {
+        const newMovie = {
+            ...movie,
+            userRating,
+        };
+        onAddToList(newMovie);
+    }
+
     useEffect(() => {
         async function getMovieDetails() {
             setLoading(true);
@@ -279,11 +291,19 @@ function MovieDetails({ selectedMovie, onUnselectMovie, onAddToList, selectedMov
                                 ))}
                             </p>
                             {!isAddedToList ? (
-                                <button className="btn btn-primary me-1" onClick={() => onAddToList(movie)}>
-                                    Add
-                                </button>
+                                <>
+                                    <div className="my-4">
+                                        <StarRating onRating={setUserRating} maxRating={10} />
+                                    </div>
+                                    <button className="btn btn-primary me-1" onClick={() => handleAddToList(movie)}>
+                                        Add
+                                    </button>
+                                </>
                             ) : (
-                                <p>The movie is already in your list!</p>
+                                <p>
+                                    The movie is already in your list! Your vote:{" "}
+                                    <i className="bi bi-stars text-warning"></i> {selectedMoviesUserRating}
+                                </p>
                             )}
                             <button className="btn btn-danger" onClick={onUnselectMovie}>
                                 Close
@@ -323,6 +343,7 @@ function Movie({ movie, onSelectMovie, selectedMovie }) {
 function MyMovieListSummary({ selectedMovies }) {
     const avgRating = getAverage(selectedMovies.map((m) => m.vote_average));
     const sumDuration = selectedMovies.reduce((total, movie) => total + movie.runtime, 0);
+    const avgUserRating = getAverage(selectedMovies.map((m) => m.userRating));
     return (
         <div className="card mb-2 border-0">
             <div className="card-body">
@@ -331,6 +352,10 @@ function MyMovieListSummary({ selectedMovies }) {
                     <p>
                         <i className="bi bi-star-fill text-warning me-1"></i>
                         <span>{avgRating.toFixed(2)}</span>
+                    </p>
+                    <p>
+                        <i className="bi bi-stars text-warning me-1"></i>
+                        <span>{avgUserRating.toFixed(2)}</span>
                     </p>
                     <p>
                         <i className="bi bi-hourglass-split me-1"></i>

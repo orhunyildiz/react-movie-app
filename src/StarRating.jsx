@@ -21,10 +21,15 @@ StarRating.propTypes = {
     size: PropTypes.number,
 };
 
-export default function StarRating({ maxRating = 5, color = "#fcc419", size = 16 }) {
+export default function StarRating({ maxRating = 5, color = "#fcc419", size = 16, onRating }) {
     const [rating, setRating] = useState(0);
     const [hoverRating, setHoverRating] = useState(0);
     const currentRating = hoverRating || rating;
+
+    function handleSetRating(rating) {
+        setRating(rating);
+        onRating(rating);
+    }
 
     return (
         <div style={containerStyle}>
@@ -44,7 +49,7 @@ export default function StarRating({ maxRating = 5, color = "#fcc419", size = 16
                             fill={fill}
                             color={color}
                             size={size}
-                            onRating={(value) => setRating(value)}
+                            onRating={(value) => handleSetRating(value)}
                             onHoverEnter={(value) => setHoverRating(value)}
                             onHoverLeave={() => setHoverRating(0)}
                         />
