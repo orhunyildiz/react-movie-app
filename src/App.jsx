@@ -37,12 +37,15 @@ export default function App() {
     }
 
     useEffect(() => {
+        const controller = new AbortController();
+        const signal = controller.signal;
         async function getMovies() {
             try {
                 setLoading(true);
                 setError("");
                 const response = await fetch(
-                    `https://api.themoviedb.org/3/search/movie?api_key=${api_key}&query=${query}`
+                    `https://api.themoviedb.org/3/search/movie?api_key=${api_key}&query=${query}`,
+                    { signal: signal }
                 );
                 if (!response.ok) {
                     throw new Error("An unknown error occured!");
@@ -53,7 +56,11 @@ export default function App() {
                 }
                 setMovies(data.results);
             } catch (error) {
-                setError(error.message);
+                if (error.name === "AbortError") {
+                    console.log("aborted...");
+                } else {
+                    setError(error.message);
+                }
             }
             setLoading(false);
         }
@@ -63,6 +70,9 @@ export default function App() {
             return;
         }
         getMovies();
+        return () => {
+            controller.abort();
+        };
     }, [query]);
 
     return (
