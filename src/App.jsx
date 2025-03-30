@@ -186,13 +186,13 @@ function Pagination({ nextPage, previousPage, currentPage, totalPages, onPageCha
     return (
         <nav>
             <ul className="pagination d-flex justify-content-center">
-                {/* Önceki Sayfa */}
+                {/* Previous Page */}
                 <li className={currentPage !== 1 ? "page-item" : "page-item disabled"}>
                     <button className="page-link" onClick={previousPage}>
                         <i className="bi bi-arrow-left"></i>
                     </button>
                 </li>
-                {/* Sayfa Numaraları */}
+                {/* Page Numbers */}
                 {pageNumbers.map((page, index) =>
                     page === "..." ? (
                         <li key={index} className="page-item disabled">
@@ -206,7 +206,7 @@ function Pagination({ nextPage, previousPage, currentPage, totalPages, onPageCha
                         </li>
                     )
                 )}
-                {/* Sonraki Sayfa */}
+                {/* Next Page */}
                 <li className={currentPage < totalPages ? "page-item" : "page-item disabled"}>
                     <button className="page-link" onClick={nextPage}>
                         <i className="bi bi-arrow-right"></i>
