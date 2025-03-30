@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import StarRating from "./StarRating";
+import useMovies from "./hooks/useMovies";
+import useMovieDetails from "./hooks/useMovieDetails";
 
 const getAverage = (array) => array.reduce((sum, value) => sum + value / array.length, 0);
 
@@ -13,22 +15,11 @@ function formatDate(isoDateString) {
 
 export default function App() {
     const [query, setQuery] = useState("");
-    const [movies, setMovies] = useState([]);
     const [selectedMovies, setSelectedMovies] = useState([]);
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState("");
     const [selectedMovie, setSelectedMovie] = useState(null);
-    const [currentPage, setCurrentPage] = useState(1);
-    const [totalPages, setTotalPages] = useState(0);
-    const [totalResults, setTotalResults] = useState(0);
 
-    function nextPage() {
-        setCurrentPage(currentPage + 1);
-    }
-
-    function previousPage() {
-        setCurrentPage(currentPage - 1);
-    }
+    const { movies, loading, error, currentPage, totalPages, totalResults, nextPage, previousPage, setCurrentPage } =
+        useMovies(query);
 
     function handleSelectedMovie(id) {
         setSelectedMovie((selectedMovie) => (id === selectedMovie ? null : id));
@@ -46,47 +37,6 @@ export default function App() {
     function handleDeleteFromList(id) {
         setSelectedMovies((selectedMovies) => selectedMovies.filter((m) => m.id !== id));
     }
-
-    useEffect(() => {
-        const controller = new AbortController();
-        const signal = controller.signal;
-        async function getMovies(page) {
-            try {
-                setLoading(true);
-                setError("");
-                const response = await fetch(
-                    `https://api.themoviedb.org/3/search/movie?api_key=${api_key}&query=${query}&page=${page}`,
-                    { signal: signal }
-                );
-                if (!response.ok) {
-                    throw new Error("An unknown error occured!");
-                }
-                const data = await response.json();
-                if (data.total_results === 0) {
-                    throw new Error("The movie not found!");
-                }
-                setMovies(data.results);
-                setTotalPages(data.total_pages);
-                setTotalResults(data.total_results);
-            } catch (error) {
-                if (error.name === "AbortError") {
-                    console.log("aborted...");
-                } else {
-                    setError(error.message);
-                }
-            }
-            setLoading(false);
-        }
-        if (query.length < 3) {
-            setMovies([]);
-            setError("");
-            return;
-        }
-        getMovies(currentPage);
-        return () => {
-            controller.abort();
-        };
-    }, [query, currentPage]);
 
     return (
         <>
@@ -171,7 +121,7 @@ function Pagination({ nextPage, previousPage, currentPage, totalPages, onPageCha
                 if (i - l === 2) {
                     rangeWithDots.push(l + 1);
                 } else if (i - l !== 1) {
-                    rangeWithDots.push("...");
+                    rangeWithDots.push("dots-" + i); // Use a unique identifier for dots
                 }
             }
             rangeWithDots.push(i);
@@ -194,12 +144,12 @@ function Pagination({ nextPage, previousPage, currentPage, totalPages, onPageCha
                 </li>
                 {/* Page Numbers */}
                 {pageNumbers.map((page, index) =>
-                    page === "..." ? (
-                        <li key={index} className="page-item disabled">
+                    typeof page === "string" && page.startsWith("dots-") ? (
+                        <li key={page} className="page-item disabled">
                             <span className="page-link">...</span>
                         </li>
                     ) : (
-                        <li key={page} className={page === currentPage ? "page-item active" : "page-item"}>
+                        <li key={`page-${page}`} className={page === currentPage ? "page-item active" : "page-item"}>
                             <button className="page-link" onClick={() => onPageChange(page)}>
                                 {page}
                             </button>
@@ -331,11 +281,11 @@ function MovieList({ movies, onSelectMovie, selectedMovie }) {
 }
 
 function MovieDetails({ selectedMovie, onUnselectMovie, onAddToList, selectedMovies }) {
-    const [movie, setMovie] = useState({});
-    const [loading, setLoading] = useState(false);
     const [userRating, setUserRating] = useState("");
     const isAddedToList = selectedMovies.map((m) => m.id).includes(selectedMovie);
     const selectedMoviesUserRating = selectedMovies.find((m) => m.id === selectedMovie)?.userRating;
+
+    const { movie, loading } = useMovieDetails(selectedMovie);
 
     function handleAddToList() {
         const newMovie = {
@@ -344,17 +294,6 @@ function MovieDetails({ selectedMovie, onUnselectMovie, onAddToList, selectedMov
         };
         onAddToList(newMovie);
     }
-
-    useEffect(() => {
-        async function getMovieDetails() {
-            setLoading(true);
-            const response = await fetch(`https://api.themoviedb.org/3/movie/${selectedMovie}?api_key=${api_key}`);
-            const data = await response.json();
-            setMovie(data);
-            setLoading(false);
-        }
-        getMovieDetails();
-    }, [selectedMovie]);
     return (
         <>
             {loading ? (
