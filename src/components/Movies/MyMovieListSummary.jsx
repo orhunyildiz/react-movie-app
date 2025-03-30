@@ -9,16 +9,19 @@ export default function MyMovieListSummary({ selectedMovies }) {
                 <h5>My List: [{selectedMovies.length}] movies</h5>
                 <div className="d-flex justify-content-between">
                     <p>
-                        <i className="bi bi-star-fill text-warning me-1"></i>
-                        <span>{avgRating.toFixed(2)}</span>
+                        <i
+                            title="Average TMDB Rating of the Listed Movies"
+                            className="bi bi-star-fill text-warning me-1"
+                        ></i>
+                        <span title="Average TMDB Rating of the Listed Movies">{avgRating.toFixed(2)}</span>
                     </p>
                     <p>
-                        <i className="bi bi-stars text-warning me-1"></i>
-                        <span>{avgUserRating.toFixed(2)}</span>
+                        <i title="Average Your Rating" className="bi bi-stars text-warning me-1"></i>
+                        <span title="Average Your Rating">{avgUserRating.toFixed(2)}</span>
                     </p>
                     <p>
-                        <i className="bi bi-hourglass-split me-1"></i>
-                        <span>{sumDuration} min.</span>
+                        <i title="Total Duration" className="bi bi-hourglass-split me-1"></i>
+                        <span title="Total Duration">{sumDuration} min.</span>
                     </p>
                 </div>
             </div>

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import useMovieDetails from "../../hooks/useMovieDetails";
 import Loading from "../Loading";
 import StarRating from "../../StarRating";
@@ -6,18 +6,29 @@ import FormatDate from "../FormatDate";
 
 export default function MovieDetails({ selectedMovie, onUnselectMovie, onAddToList, selectedMovies }) {
     const [userRating, setUserRating] = useState("");
+    const [ratingError, setRatingError] = useState("");
     const isAddedToList = selectedMovies.map((m) => m.id).includes(selectedMovie);
     const selectedMoviesUserRating = selectedMovies.find((m) => m.id === selectedMovie)?.userRating;
 
     const { movie, loading } = useMovieDetails(selectedMovie);
 
     function handleAddToList() {
+        if (!userRating) {
+            setRatingError("Please rate the movie before adding to your list.");
+            return;
+        }
+        setRatingError("");
         const newMovie = {
             ...movie,
             userRating,
         };
         onAddToList(newMovie);
     }
+    useEffect(() => {
+        if (userRating) {
+            setRatingError("");
+        }
+    }, [userRating]);
     return (
         <>
             {loading ? (
@@ -44,7 +55,7 @@ export default function MovieDetails({ selectedMovie, onUnselectMovie, onAddToLi
                             </p>
                             <p>
                                 <i className="bi bi-star-fill text-warning"></i>
-                                <span className="ms-1">{movie.vote_average}</span>
+                                <span className="ms-1">{Number(movie.vote_average).toFixed(2)}</span>
                             </p>
                         </div>
                         <div className="col-12 border-top p-3 mt-3">
@@ -60,6 +71,7 @@ export default function MovieDetails({ selectedMovie, onUnselectMovie, onAddToLi
                                 <>
                                     <div className="my-4">
                                         <StarRating onRating={setUserRating} maxRating={10} />
+                                        {ratingError && <div className="alert alert-warning mt-2">{ratingError}</div>}
                                     </div>
                                     <button className="btn btn-primary me-1" onClick={() => handleAddToList(movie)}>
                                         Add
