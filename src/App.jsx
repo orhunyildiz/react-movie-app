@@ -12,12 +12,23 @@ function formatDate(isoDateString) {
 }
 
 export default function App() {
-    const [query, setQuery] = useState("father");
+    const [query, setQuery] = useState("");
     const [movies, setMovies] = useState([]);
     const [selectedMovies, setSelectedMovies] = useState([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
     const [selectedMovie, setSelectedMovie] = useState(null);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(0);
+    const [totalResults, setTotalResults] = useState(0);
+
+    function nextPage() {
+        setCurrentPage(currentPage + 1);
+    }
+
+    function previousPage() {
+        setCurrentPage(currentPage - 1);
+    }
 
     function handleSelectedMovie(id) {
         setSelectedMovie((selectedMovie) => (id === selectedMovie ? null : id));
@@ -39,12 +50,12 @@ export default function App() {
     useEffect(() => {
         const controller = new AbortController();
         const signal = controller.signal;
-        async function getMovies() {
+        async function getMovies(page) {
             try {
                 setLoading(true);
                 setError("");
                 const response = await fetch(
-                    `https://api.themoviedb.org/3/search/movie?api_key=${api_key}&query=${query}`,
+                    `https://api.themoviedb.org/3/search/movie?api_key=${api_key}&query=${query}&page=${page}`,
                     { signal: signal }
                 );
                 if (!response.ok) {
@@ -55,6 +66,8 @@ export default function App() {
                     throw new Error("The movie not found!");
                 }
                 setMovies(data.results);
+                setTotalPages(data.total_pages);
+                setTotalResults(data.total_results);
             } catch (error) {
                 if (error.name === "AbortError") {
                     console.log("aborted...");
@@ -69,18 +82,18 @@ export default function App() {
             setError("");
             return;
         }
-        getMovies();
+        getMovies(currentPage);
         return () => {
             controller.abort();
         };
-    }, [query]);
+    }, [query, currentPage]);
 
     return (
         <>
             <Nav>
                 <Logo />
                 <Search query={query} setQuery={setQuery} />
-                <NavSearchResult movies={movies} />
+                <NavSearchResult totalResults={totalResults} />
             </Nav>
             <Main>
                 <div className="row mt-2">
@@ -88,11 +101,24 @@ export default function App() {
                         <ListContainer>
                             {loading && <Loading />}
                             {!loading && !error && (
-                                <MovieList
-                                    movies={movies}
-                                    onSelectMovie={handleSelectedMovie}
-                                    selectedMovie={selectedMovie}
-                                />
+                                <>
+                                    {movies.length > 0 && (
+                                        <>
+                                            <MovieList
+                                                movies={movies}
+                                                onSelectMovie={handleSelectedMovie}
+                                                selectedMovie={selectedMovie}
+                                            />
+                                            <Pagination
+                                                nextPage={nextPage}
+                                                previousPage={previousPage}
+                                                currentPage={currentPage}
+                                                totalPages={totalPages}
+                                                onPageChange={(page) => setCurrentPage(page)}
+                                            />
+                                        </>
+                                    )}
+                                </>
                             )}
                             {error && <ErrorMessage message={error} />}
                         </ListContainer>
@@ -121,6 +147,73 @@ export default function App() {
             </Main>
             <BackToTop />
         </>
+    );
+}
+
+function Pagination({ nextPage, previousPage, currentPage, totalPages, onPageChange }) {
+    // Helper function to restrict the page numbers displayed
+    const getPageNumbers = (currentPage, totalPages) => {
+        const delta = 5; // Number of pages to show around the current page
+        const range = [];
+        const rangeWithDots = [];
+        let l;
+
+        // Always include the first, last, and pages around the current page
+        for (let i = 1; i <= totalPages; i++) {
+            if (i === 1 || i === totalPages || (i >= currentPage - delta && i <= currentPage + delta)) {
+                range.push(i);
+            }
+        }
+
+        // Insert "..." if there's a gap between page numbers
+        for (let i of range) {
+            if (l) {
+                if (i - l === 2) {
+                    rangeWithDots.push(l + 1);
+                } else if (i - l !== 1) {
+                    rangeWithDots.push("...");
+                }
+            }
+            rangeWithDots.push(i);
+            l = i;
+        }
+
+        return rangeWithDots;
+    };
+
+    const pageNumbers = getPageNumbers(currentPage, totalPages);
+
+    return (
+        <nav>
+            <ul className="pagination d-flex justify-content-center">
+                {/* Önceki Sayfa */}
+                <li className={currentPage !== 1 ? "page-item" : "page-item disabled"}>
+                    <button className="page-link" onClick={previousPage}>
+                        <i className="bi bi-arrow-left"></i>
+                    </button>
+                </li>
+                {/* Sayfa Numaraları */}
+                {pageNumbers.map((page, index) =>
+                    page === "..." ? (
+                        <li key={index} className="page-item disabled">
+                            <span className="page-link">...</span>
+                        </li>
+                    ) : (
+                        <li key={page} className={page === currentPage ? "page-item active" : "page-item"}>
+                            <button className="page-link" onClick={() => onPageChange(page)}>
+                                {page}
+                            </button>
+                        </li>
+                    )
+                )}
+                {/* Sonraki Sayfa */}
+                <li className={currentPage < totalPages ? "page-item" : "page-item disabled"}>
+                    <button className="page-link" onClick={nextPage}>
+                        <i className="bi bi-arrow-right"></i>
+                    </button>
+                </li>
+            </ul>
+        </nav>
     );
 }
 
@@ -203,10 +296,10 @@ function Search({ query, setQuery }) {
     );
 }
 
-function NavSearchResult({ movies }) {
+function NavSearchResult({ totalResults }) {
     return (
         <div className="col-4 text-end">
-            <strong>{movies.length}</strong> records found.
+            <strong>{totalResults}</strong> records found.
         </div>
     );
 }
