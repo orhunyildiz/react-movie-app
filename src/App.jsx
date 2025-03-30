@@ -2,10 +2,9 @@ import { useEffect, useState } from "react";
 import StarRating from "./StarRating";
 import useMovies from "./hooks/useMovies";
 import useMovieDetails from "./hooks/useMovieDetails";
+import useLocalStorage from "./hooks/useLocalStorage";
 
 const getAverage = (array) => array.reduce((sum, value) => sum + value / array.length, 0);
-
-const api_key = "3f14d0e50817377c6d546bdc3ad30b21";
 
 function formatDate(isoDateString) {
     if (!isoDateString) return "";
@@ -15,7 +14,7 @@ function formatDate(isoDateString) {
 
 export default function App() {
     const [query, setQuery] = useState("");
-    const [selectedMovies, setSelectedMovies] = useState([]);
+    const [selectedMovies, setSelectedMovies] = useLocalStorage([], "selectedMovies");
     const [selectedMovie, setSelectedMovie] = useState(null);
 
     const { movies, loading, error, currentPage, totalPages, totalResults, nextPage, previousPage, setCurrentPage } =
